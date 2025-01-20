@@ -76,39 +76,7 @@ def main():
                     results_display.show(
                         original_img=original_img, predictions=predictions
                     )
-
-                    # if predictions is not None:
-                    #     # Display results in columns
-                    #     st.success("Segmentation complete!")
-
-                    #     col1, col2, col3 = st.columns(3)
-
-                    #     slice_index = 77
-
-                    #     with col1:
-                    #         st.subheader("Tumor Core (TC)")
-                    #         st.image(
-                    #             predictions[0].numpy()[:, :, slice_index],
-                    #             caption="TC Prediction",
-                    #             clamp=True,
-                    #         )
-
-                    #     with col2:
-                    #         st.subheader("Whole Tumor (WT)")
-                    #         st.image(
-                    #             predictions[1].numpy()[:, :, slice_index],
-                    #             caption="WT Prediction",
-                    #             clamp=True,
-                    #         )
-
-                    #     with col3:
-                    #         st.subheader("Enhancing Tumor (ET)")
-                    #         st.image(
-                    #             predictions[2].numpy()[:, :, slice_index],
-                    #             caption="ET Prediction",
-                    #             clamp=True,
-                    #         )
-
+                    st.success("Processing complete!")
     except Exception as e:
         st.error(f"Tumor error occurred: {e}")
 
