@@ -3,3 +3,7 @@ wandb
 streamlit
 fastapi
 nibabel
+python-dotenv
+uvicorn>=0.15.0
+python-multipart
+pydantic-settings>=2.0.0

@@ -6,16 +6,23 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 import os
-import tempfile
+
+# import tempfile
 import streamlit as st
 import wandb
 from dotenv import load_dotenv
-from models.model_inference import SingleFileInference
-import torch
+
+# from models.model_inference import SingleFileInference
+# import torch
 from frontend.components.results import ResultsDisplay
+
+import requests
+import numpy as np
 
 # Load environment variables
 load_dotenv()
+
+api_url = os.getenv("API_URL")
 
 
 def initialize_wandb():
@@ -29,56 +36,63 @@ def initialize_wandb():
     return wandb.init(project="glioma-brain-tumor-segmentation", job_type="inference")
 
 
+def check_api_health():
+    """Check if the API is running and healthy"""
+    try:
+        response = requests.get(f"{api_url}/health")
+        return response.status_code == 200 and response.json()["model_loaded"]
+    except requests.RequestException:
+        return False
+
+
 def main():
     st.set_page_config(page_title="Brain Tumor Segmentation", layout="wide")
     st.title("Brain Tumor Segmentation")
 
     # Initialize W&B
     run = initialize_wandb()
-    # print(f"Cuda support is {torch.cuda.is_available()}")
-    # print("CUDA_VISIBLE_DEVICES:", os.environ.get("CUDA_VISIBLE_DEVICES", "Not Set"))
-    # print(
-    #     "Current GPU device:",
-    #     torch.cuda.current_device() if torch.cuda.is_available() else "None",
-    # )
-    try:
-        # Initialize model
-        with st.spinner("Loading model..."):
-            wandb_artifact = os.getenv("WANDB_ARTIFACT_CHECKPOINT")
-            segmentation = SingleFileInference()
-            segmentation.load_model(wandb_artifact=wandb_artifact)
 
-        st.success("Model loaded successfully!")
+    try:
+        # Check API health
+        if not check_api_health():
+            st.error(
+                "API is not available or model is not loaded. Please ensure the API is running."
+            )
+            st.stop()
+
+        st.success("Connected to API successfully!")
 
         # File upload
         uploaded_file = st.file_uploader("Choose a NIfTI file", type="nii.gz")
 
         if uploaded_file:
             with st.spinner("Processing..."):
-                # Create temporary file
-                with tempfile.NamedTemporaryFile(
-                    delete=False, suffix=".nii.gz"
-                ) as tmp_file:
-                    tmp_file.write(uploaded_file.read())
-                    tmp_file.flush()
-
-                    # Load original image
-                    data = segmentation.transforms({"image": tmp_file.name})
-                    original_img = data["image"].numpy()  # Shape: (4, H, W, D)
-
-                    # Run inference
-                    predictions = segmentation.predict(
-                        tmp_file.name
-                    )  # Shape: (3, H, W, D)
-
-                    # Initialize and display results
-                    results_display = ResultsDisplay()
-                    results_display.show(
-                        original_img=original_img, predictions=predictions
+                # Send file to API
+                files = {
+                    "file": (
+                        "image.nii.gz",
+                        uploaded_file.getvalue(),
+                        "application/octet-stream",
                     )
-                    st.success("Processing complete!")
+                }
+                response = requests.post(f"{api_url}/predict", files=files)
+
+                if response.status_code != 200:
+                    st.error(f"API Error: {response.json()['detail']}")
+                    st.stop()
+
+                # Parse response
+                result = response.json()
+                original_img = np.array(result["original_img"])
+                predictions = np.array(result["predictions"])
+
+                # Initialize and display results
+                results_display = ResultsDisplay()
+                results_display.show(original_img=original_img, predictions=predictions)
+                st.success("Processing complete!")
+
     except Exception as e:
-        st.error(f"Tumor error occurred: {e}")
+        st.error(f"An error occurred: {str(e)}")
 
     finally:
         # Cleanup button in sidebar
