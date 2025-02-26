@@ -1,23 +1,14 @@
 import sys
 import os
-
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-if project_root not in sys.path:
-    sys.path.append(project_root)
-
-import os
-
-# import tempfile
 import streamlit as st
 import wandb
 from dotenv import load_dotenv
-
-# from models.model_inference import SingleFileInference
-# import torch
 from frontend.components.results import ResultsDisplay
-
 import requests
 import numpy as np
+import json
+from typing import Dict, Any
+import time
 
 # Load environment variables
 load_dotenv()
@@ -45,6 +36,48 @@ def check_api_health():
         return False
 
 
+def process_streaming_response(response, progress_bar):
+    """Process streaming response and update progress"""
+    metadata = None
+    original_img_data = []
+    predictions_data = []
+    original_total = 0
+    predictions_total = 0
+    current_array = original_img_data  # Start with original image
+
+    for line in response.iter_lines():
+        if not line:
+            continue
+
+        data = json.loads(line)
+
+        if "metadata" in data:
+            metadata = data["metadata"]
+            continue
+
+        if "total_elements" in data:
+            if not original_total:
+                original_total = data["total_elements"]
+            else:
+                predictions_total = data["total_elements"]
+                current_array = predictions_data
+            continue
+
+        if "chunk_start" in data:
+            current_array.extend(data["data"])
+            if current_array is original_img_data:
+                progress = len(original_img_data) / original_total
+            else:
+                progress = 0.5 + (len(predictions_data) / predictions_total) * 0.5
+            progress_bar.progress(progress)
+
+    # Reshape arrays according to metadata
+    original_img = np.array(original_img_data).reshape(metadata["original_shape"])
+    predictions = np.array(predictions_data).reshape(metadata["predictions_shape"])
+
+    return original_img, predictions
+
+
 def main():
     st.set_page_config(page_title="Brain Tumor Segmentation", layout="wide")
     st.title("Brain Tumor Segmentation")
@@ -66,6 +99,11 @@ def main():
         uploaded_file = st.file_uploader("Choose a NIfTI file", type="nii.gz")
 
         if uploaded_file:
+            # Create progress containers
+            progress_container = st.empty()
+            progress_bar = st.progress(0)
+            status_container = st.empty()
+
             with st.spinner("Processing..."):
                 # Send file to API
                 files = {
@@ -75,21 +113,31 @@ def main():
                         "application/octet-stream",
                     )
                 }
-                response = requests.post(f"{api_url}/predict", files=files)
 
-                if response.status_code != 200:
-                    st.error(f"API Error: {response.json()['detail']}")
-                    st.stop()
+                # Stream response
+                with requests.post(
+                    f"{api_url}/predict_stream", files=files, stream=True
+                ) as response:
+                    if response.status_code != 200:
+                        st.error(f"API Error: {response.text}")
+                        st.stop()
 
-                # Parse response
-                result = response.json()
-                original_img = np.array(result["original_img"])
-                predictions = np.array(result["predictions"])
+                    # Process streaming response
+                    original_img, predictions = process_streaming_response(
+                        response, progress_bar
+                    )
 
-                # Initialize and display results
-                results_display = ResultsDisplay()
-                results_display.show(original_img=original_img, predictions=predictions)
-                st.success("Processing complete!")
+                    # Clean up progress indicators
+                    progress_container.empty()
+                    progress_bar.empty()
+                    status_container.empty()
+
+                    # Display results
+                    results_display = ResultsDisplay()
+                    results_display.show(
+                        original_img=original_img, predictions=predictions
+                    )
+                    st.success("Processing complete!")
 
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
