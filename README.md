@@ -42,6 +42,7 @@ The system architecture diagram below illustrates the main components and their 
 ├── models/                             # Inference script
 ├── artifacts/                          # Model checkpoint
 ├── Wandb/                              # WandB logging
+├── Notebooks/                          # Training notebooks
 ├── requirements.txt                    # required libraries
 ```
 
@@ -52,7 +53,7 @@ The system architecture diagram below illustrates the main components and their 
 - Handles **image processing** and **runs inference** on the trained model
 - Provides **RESTful endpoints** for the frontend to interact with
 
-### Observability Stack
+### Interactive Frontend
 - **Streamlit-based user interface** for uploading brain MRI scans (compatible with Medical Segmentation Decathlon competition)
 - **Visualizes** the input data and prediction segmentation overlay 
 - Contains **utility components and page layouts**
@@ -124,8 +125,7 @@ The application should now be accessible at http://localhost:8501
 ## Resources
 
 Demo Video - Watch a demonstration of the system
-![Trained Model]() - Download the pre-trained segmentation model
-![Dataset]() - Access the dataset used for training
+![Dataset](http://medicaldecathlon.com/) - Access the dataset used for training
 
 ## Troubleshooting
 **Issue**: The API server fails to start.
