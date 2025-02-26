@@ -12,7 +12,7 @@ import streamlit as st
 
 # Configure the app
 st.set_page_config(
-    page_title="Glioma Segmentation",
+    page_title="Welcome",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -23,7 +23,7 @@ page = st.sidebar.success("Select a page to get started")
 
 st.markdown(
     """ # Glioma Segmentation App 🧠
-            This app performs glioma segmentation on multi-modal MRI scans using a 3D U-Net model.
+            This app performs glioma segmentation on multi-modal MRI scans using an encoder-decoder based CNN model.
             Check out the [wandb dashboard](https://api.wandb.ai/links/duongmaixa1207-university-of-south-florida/ncle7vv1) for model training details and interesting visualizations.
             """
 )
