@@ -124,8 +124,8 @@ The application should now be accessible at http://localhost:8501
 
 ## Resources
 
-Demo Video - Watch a demonstration of the system
-[Dataset](http://medicaldecathlon.com/) - Access the dataset used for training
+- [Demo Video](https://youtu.be/gHI26CsMc7g) - Watch a demonstration of the system
+- [Dataset](http://medicaldecathlon.com/) - Access the dataset used for training
 
 ## Troubleshooting
 **Issue**: The API server fails to start.
