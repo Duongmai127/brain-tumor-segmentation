@@ -76,7 +76,7 @@ The system architecture diagram below illustrates the main components and their 
 
 ### Step 1: Clone the Repository
 ```bash
-git clone https://github.com/duongmaixa1207/brain-tumor-segmentation.git
+git clone https://github.com/Duongmai127/brain-tumor-segmentation.git
 cd brain-tumor-segmentation
 ```
 
